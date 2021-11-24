@@ -1,72 +1,76 @@
 import { useState } from 'react';
-import { PuzzleNMove } from './puzzle/PuzzleNMove';
-import { PuzzleNSolver } from './puzzle/PuzzleNSolver';
-import { StringPuzzleSolution } from './puzzle/StringPuzzleSolution';
+import { PuzzleStepImpl } from './puzzle/PuzzleStepImpl';
+import { PuzzleSolverImpl } from './puzzle/PuzzleSolverImpl';
+
 import GridItem from './components/GridItem';
-import './App.css';
+import SolutionSection from './components/SolutionSection/SolutionSection';
+import { Title } from './components/Title';
+import { Header } from './components/Header';
+import { Board } from './components/Board';
+import { Button } from './components/Button';
+import { Layout } from './components/Layout';
+
+import { EXAMPLES, GOAL_STEP } from './App.constants';
+import { Actions } from './App.styles';
 
 function App() {
-  const [string, setString] = useState('');
-  const handleSolve = () => {
-    const solution = new StringPuzzleSolution();
-    const solver = new PuzzleNSolver(solution);
-    const initialMove = PuzzleNMove.from([
-      [0, 2, 3],
-      [1, 4, 6],
-      [7, 5, 8],
-      // [1, 2, 3],
-      // [0, 4, 6],
-      // [7, 5, 8],
-      // [0, 1],
-      // [2, 3],
-    ]);
-    const goalMove = PuzzleNMove.from([
-      [1, 2, 3],
-      [4, 5, 6],
-      [7, 8, 0],
-      // [1, 3],
-      // [2, 0],
-    ]);
-    solution.add(initialMove);
-    console.log('solving');
-    solver.solve(initialMove, goalMove);
-    console.log('done');
-    setString(solution.toString());
+  const [currentTiles, setTiles] = useState(EXAMPLES.sameAsGoal);
+  const [solutionStep, setSolutionStep] = useState<PuzzleStepImpl>(null);
+
+  const handleSolve = async () => {
+    const solver = new PuzzleSolverImpl();
+    const initialStep = new PuzzleStepImpl(currentTiles, null, null);
+    if (initialStep.isSolvable()) {
+      console.log('Resolviendo');
+      const step = solver.solve(initialStep, GOAL_STEP) as PuzzleStepImpl;
+      console.log('Listo');
+      setSolutionStep(step);
+    } else {
+      alert('Sin solución');
+    }
   };
+
   return (
     <div className="App">
-      <header>
-        <h1 style={{ margin: 0, padding: 20 }}>App</h1>
-        <button onClick={handleSolve} type="button">
-          Solve
-        </button>
-        <button onClick={() => setString('')} type="button">
-          Reset
-        </button>
-        <hr />
-      </header>
-
-      <main className="container">
+      <Layout className="App-container">
+        <Header>
+          <Title>Sliding Puzzle</Title>
+        </Header>
+        <Actions>
+          <Button onClick={() => setTiles(EXAMPLES.easiest)} outline>
+            Fácil
+          </Button>
+          <Button onClick={() => setTiles(EXAMPLES.hard)} outline>
+            Difícil
+          </Button>
+          <Button onClick={() => setTiles(EXAMPLES.hardest)} outline>
+            Muy difícil
+          </Button>
+        </Actions>
         <div>
-          <GridItem>1</GridItem>
-          <GridItem>2</GridItem>
-          <GridItem>3</GridItem>
+          <Board>
+            {currentTiles.map((value, index) => (
+              <GridItem
+                key={value}
+                value={value}
+                onChange={value => {
+                  setTiles(t => {
+                    const nextTiles = t.slice();
+                    nextTiles[index] = value;
+                    return nextTiles;
+                  });
+                }}
+              />
+            ))}
+          </Board>
+          <Actions>
+            <Button onClick={handleSolve} type="button">
+              Resolver
+            </Button>
+          </Actions>
         </div>
-        <div>
-          <GridItem>4</GridItem>
-          <GridItem>5</GridItem>
-          <GridItem>6</GridItem>
-        </div>
-        <div>
-          <GridItem>7</GridItem>
-          <GridItem>8</GridItem>
-          <GridItem drag>0</GridItem>
-        </div>
-      </main>
-
-      <pre>
-        <code>{string}</code>
-      </pre>
+        {solutionStep && <SolutionSection step={solutionStep} />}
+      </Layout>
     </div>
   );
 }
